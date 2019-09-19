@@ -358,13 +358,33 @@ for (i in c(1:ncol(df.dist))){
   }
 }
 
-df = cbind(df[-c(151,152,153),], initassign)
+df = cbind(df[-c(151,152,153),], initassign, iris[,5])
 
+View(df)
 
 ```
 
 
 2. Run PCA on the Iris dataset. Plot a scatter plot of PC1 vs PC2 and include the percent variance those PCs describe. 
+
+```{r}
+iris.pca <- data.matrix(iris[,-5])
+
+center <- apply(iris.pca, 2, function(x) x - mean(x))
+
+covariance <- cov(center)
+
+eigenvalue <- eigen(covariance)$value
+
+eigenvector <- eigen(covariance)$vector
+
+PC <- as.data.frame(data.matrix(center) %*% eigenvector)
+
+ggplot(PC, aes(PC[,1], PC[,2])) + geom_point(aes(PC[,1], PC[,2])) 
+
+
+
+```
 
 3. Run ICA on the Iris dataset. Plot the independent components as a heatmap.
 
