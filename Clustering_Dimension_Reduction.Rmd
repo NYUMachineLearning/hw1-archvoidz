@@ -26,7 +26,7 @@ library(fastICA)
 
 ```{r}
 # read in Auto data
-Auto_data <- read_csv("/Users/ay1392/Desktop/Auto.csv")
+Auto_data <- read_csv("Auto.csv")
 
 #remove cars with unknown horsepower and set horsepower to numeric
 Auto_data <- Auto_data %>% 
@@ -273,7 +273,96 @@ data(iris)
 
 0. Subset the Iris dataset to only include `Sepal.Length`, `Sepal.Width`, `Petal.Length`, and `Petal.Width`. 
 
+```{r}
+df = iris[,-5]
+```
+
 1. Write out the Kmeans algorithm by hand, and run two iterations of it. 
+
+*The following code creates 3 centroids by creating three new points, created from randomly selecting points within the range of each factor. It then calculates the distance of each point to that centroid and assigns the points to centroids forming three clusters. It then calculates the mean of each cluster and uses them as the new values for the 4 factors (thereby generating 3 new points to act as centroids) and recalculates the distance then reassigns the points*
+
+*While running this code a few times, a problem arose in that, in the initial assigment of cluster points, it can randomly assign points such that only two clusters form because the third is too far away. This would cause the code to break because it acts under the assumption of three clusters. Similarly, it may choose points that lead to heavy imbalances that lead to only two clusters in the second iteration.*
+
+*This is not a problem isolated to my code as it is a common issue for Kmeans due to the random assignment of the initial centroids. This issue is usually resolved by running K-means multiple times.*
+
+```{r}
+#Create 3 new random data points to use as initial centroid clusters
+centroids = data.frame()
+counter=1
+for (i in c(151,152,153)){
+  for (j in c(1:4)){
+    centroids[counter, j] = sample(seq(from = min(df[,j]), to = max(df[,j]), length.out = (max(df[,j])-min(df[,j]))*100), 1)
+  }
+  counter = counter + 1
+} 
+
+names(centroids) = names(df)
+df = rbind(df, centroids)
+
+#Calculate distance each point is from the 3 centroids
+df.dist = as.data.frame(as.matrix(dist(df, method = "euclidean")))
+df.dist = tail(df.dist, 3)[,-c(151,152,153)]
+
+#Assign points based on proximity
+initassign = c()
+
+for (i in c(1:ncol(df.dist))){
+  if (df.dist[1,i]>df.dist[2,i]){
+    if (df.dist[1,i]>df.dist[3,i]){
+      initassign[i] = 1
+    }
+    else{
+      initassign[i] = 3
+    }
+  }else{
+    if (df.dist[2,i]>df.dist[3,i]){
+      initassign[i] = 2
+    }else{
+      initassign[i] = 3
+    }
+  }
+}
+
+df = cbind(df[-c(151,152,153),], initassign)
+
+#Assigning three new centroids based on mean of clusters  
+counter = 1
+for (i in c(151:153)){
+  for (j in c(1:4)){
+    df[i,j] = mean(subset(df, df$initassign == counter)[,j])
+  }
+  counter = counter + 1
+}
+
+#Recalculate distance
+df.dist = as.data.frame(as.matrix(dist(df, method = "euclidean")))
+df.dist = tail(df.dist, 3)[,-c(151,152,153)]
+
+#Reassign points
+initassign = c()
+
+for (i in c(1:ncol(df.dist))){
+  if (df.dist[1,i]>df.dist[2,i]){
+    if (df.dist[1,i]>df.dist[3,i]){
+      initassign[i] = 1
+    }
+    else{
+      initassign[i] = 3
+    }
+  }else{
+    if (df.dist[2,i]>df.dist[3,i]){
+      initassign[i] = 2
+    }else{
+      initassign[i] = 3
+    }
+  }
+}
+
+df = cbind(df[-c(151,152,153),], initassign)
+
+
+```
+
 
 2. Run PCA on the Iris dataset. Plot a scatter plot of PC1 vs PC2 and include the percent variance those PCs describe. 
 
