@@ -285,6 +285,8 @@ df = iris[,-5]
 
 *This is not a problem isolated to my code as it is a common issue for Kmeans due to the random assignment of the initial centroids. This issue is usually resolved by running K-means multiple times.*
 
+*This problem also likely arose due to the fact that two of the species are very similar causing two of the species to cluster together and the third cluster to have no points. *
+
 ```{r}
 #Create 3 new random data points to use as initial centroid clusters
 centroids = data.frame()
@@ -368,29 +370,46 @@ View(df)
 2. Run PCA on the Iris dataset. Plot a scatter plot of PC1 vs PC2 and include the percent variance those PCs describe. 
 
 ```{r}
-iris.pca <- data.matrix(iris[,-5])
+#Creating PCA Model
+iris.pca = prcomp(iris[,-5])
 
-center <- apply(iris.pca, 2, function(x) x - mean(x))
-
-covariance <- cov(center)
-
-eigenvalue <- eigen(covariance)$value
-
-eigenvector <- eigen(covariance)$vector
-
-PC <- as.data.frame(data.matrix(center) %*% eigenvector)
-
-ggplot(PC, aes(PC[,1], PC[,2])) + geom_point(aes(PC[,1], PC[,2])) 
-
-
-
+#Plotting the Model
+autoplot(iris.pca)
 ```
 
 3. Run ICA on the Iris dataset. Plot the independent components as a heatmap.
 
+```{r}
+#Creating ICA Model
+a <- fastICA(iris[,-5], 4, alg.typ = "parallel", fun = "logcosh", alpha = 1,
+             method = "R", row.norm = FALSE, maxit = 200,
+             tol = 0.0001, verbose = TRUE)
+
+#Creating heatmap of components
+heatmap(a$S)
+```
+
+
 4. Use Kmeans to cluster the Iris data. 
-  * Use the silhouette function in the cluster package to find the optimal number of clusters for kmeans for the iris dataset. Then cluster using kmeans clustering. Does the data cluster by species? 
+
+  * Use the silhouette function in the cluster package to find the optimal number of clusters for kmeans for the iris dataset. Then cluster using kmeans clustering. Does the data cluster by species?
+  
   * Using this clustering, color the PCA plot according to the clusters.
+  
+```{r}
+library(cluster)
+
+#Trying 2,3, and 4 clusters
+for (i in c(2:4)){
+  plot(silhouette(kmeans(iris[,-5], i)$cluster, dist(iris[,-5])))
+}
+
+#Given the silhouette plots, it appears the two of the species cluster together and therefore, two clusters are more appropriate as 3 clusters would cause data points to be very different from others in the cluster as evident by the negative values within the silhouette plot for 3 clusters. 
+iris.kmeans = kmeans(iris[,-5], 2)
+autoplot(iris.pca, colour = iris.kmeans$cluster)
+
+```
+
   
 5. Use hierarchical clustering to cluster the Iris data.
 
@@ -398,6 +417,27 @@ ggplot(PC, aes(PC[,1], PC[,2])) + geom_point(aes(PC[,1], PC[,2]))
   * For one linkage type and one distance metric, try two different cut points. 
   * Using this clustering, color the PCA plot according to the clusters. (6  plots in total)
   
+```{r}
+#Clustering based on euclidean and manhattan distance then trying two different linkage methods for the manhattan distance
+iris.euclidean = dist(iris[, -5], method = "euclidean")
+iris.manhattan = dist(iris[,-5], method = "manhattan")
+plot(hclust(iris.manhattan, method = "average"))
+plot(hclust(iris.manhattan, method = "complete"))
+
+#Created clustering using euclidean distance and average for method. Cut the tree at 2 clusters and at 3 clusters showing that the third cluster is very similar to the second cluster.
+iris.hclust = hclust(iris.euclidean, method = "complete")
+plot(iris.hclust)
+cut2 = cutree(iris.hclust, k = 2)
+rect.hclust(iris.hclust, k = 2, h = NULL)
+
+iris.hclust = hclust(iris.euclidean, method = "complete")
+plot(iris.hclust)
+cut3 = cutree(iris.hclust, k = 3)
+rect.hclust(iris.hclust, k = 3, h = NULL)
+
+```
+
+```
 
 # Optional material
 On PCA:
